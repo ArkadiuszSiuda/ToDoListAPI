@@ -1,0 +1,35 @@
+﻿@inject SpinnerService SpinnerService
+@if (isVisible)
+{
+    <div class="spinner-container">
+
+        <div class="h3 text-center">
+            <strong>Loading...</strong>
+        </div>
+
+
+    </div>
+}
+
+@code
+{
+    protected bool isVisible { get; set; }
+
+    protected override void OnInitialized()
+    {
+        SpinnerService.OnShow += ShowSpinner;
+        SpinnerService.OnHide += HideSpinner;
+    }
+
+    public void ShowSpinner()
+    {
+        isVisible = true;
+        StateHasChanged();
+    }
+
+    public void HideSpinner()
+    {
+        isVisible = false;
+        StateHasChanged();
+    }
+}

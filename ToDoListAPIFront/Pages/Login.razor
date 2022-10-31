@@ -1,0 +1,119 @@
+﻿@page "/"
+@using Blazored.LocalStorage
+@using ToDoListAPIFront.Models
+@inject HttpClient Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
+
+<style>
+    .button{
+        display:flex;
+        justify-content: center;
+        margin-top: 1em;
+    }
+    .container-card {
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        margin-top: 15em;
+    }
+
+    .demo-mat-card {
+        min-width: 400px;
+        max-width: 500px;
+    }
+
+    .demo-mat-card-content {
+        padding: 1rem;
+    }
+
+    .demo-mat-card-clean-margin {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .content-container{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .error{
+        color: red;
+    }
+</style>
+<div class="container-card">
+            <MatCard class="demo-mat-card">
+            <div class="demo-mat-card-content">
+                        <MatHeadline6 class="demo-mat-card-clean-margin">
+                            Login
+                        </MatHeadline6>
+
+                    </div>
+
+                    <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+                        <div class="content-container">
+                            <EditForm Model="user" OnSubmit="HandleLogin">
+                                <DataAnnotationsValidator />
+                                <ValidationSummary />
+                                <p class="error">@ErrorMessage</p>
+                                <label for="username">Email</label>
+                                <div>
+                                    <MatTextField id="username" @bind-Value="user.Email" Outlined="true"> </MatTextField>
+                                </div>
+
+                                <label for="password">Password</label>
+                                <div>
+                                    <MatTextField id="password" @bind-Value="user.Password" type="password" Outlined="true"> </MatTextField>
+                                </div>
+                                <div class="button">
+                                    <button type="submit" class="btn btn-primary">Login</button>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </MatBody2>
+
+            </MatCard>
+</div>
+
+@code {
+    public string ErrorMessage { get; set; } = string.Empty;
+    LoginModel user = new();
+
+    async Task HandleLogin(EditContext editContext)
+    {
+        ErrorMessage = string.Empty;
+
+        if (editContext != null && editContext.Validate())
+        {
+            var result = await Http.PostAsJsonAsync("api/login", user);
+            if (!result.IsSuccessStatusCode)
+            {
+                ErrorMessage = "Wrong email or password";
+                return;
+
+            }
+
+            var token = await result.Content.ReadAsStringAsync();
+            await LocalStorage.SetItemAsync("token", token);
+            await AuthStateProvider.GetAuthenticationStateAsync();
+            NavigationManager.NavigateTo("mainpage");
+        }
+    }
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthState;
+        if (authenticationState?.User?.Identity is not null && authenticationState.User.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("mainpage");
+        }
+
+
+    }
+
+}

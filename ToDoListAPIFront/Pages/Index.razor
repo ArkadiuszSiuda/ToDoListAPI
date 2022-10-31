@@ -1,0 +1,114 @@
+﻿@page "/mainpage"
+@using ToDoListAPIFront.Models
+@using ToDoListAPIFront.Services
+@inject IAssignmentService AssignmentsService
+@inject NavigationManager NavigationManager
+@inject IMatToaster Toaster
+    <link href="_content/MatBlazor/dist/matBlazor.css" rel="stylesheet" />
+<style>
+    .demo-mat-card {
+        max-width: 400px;
+    }
+
+    .demo-mat-card-content {
+        padding: 1rem;
+    }
+
+    .demo-mat-card-clean-margin {
+        margin: 0px;
+    }
+
+    .title{
+        font-size: 1.2em;
+        margin: 1em 1em 1em 1em;
+    }
+</style>
+
+
+<AuthorizeView>
+    <Authorized>
+        <div class="title">
+            Select date 
+        </div>
+        <p>
+            <MatDatePicker @bind-Value="@Day"></MatDatePicker>
+        </p>
+        <div class="mat-layout-grid">
+            <div class="mat-layout-grid-inner">
+
+                @foreach (var assignment in AssignmentsService.FilteredAssignments)
+                {
+                    <div class="mat-layout-grid-cell mat-layout-grid-cell-span-4">
+                        <MatCard class="demo-mat-card">
+                            <MatCardContent>
+                                <div class="demo-mat-card-content">
+                                    <MatHeadline6 class="demo-mat-card-clean-margin">
+                                        <div text-align: center>@assignment.Name</div>
+                                    </MatHeadline6>
+                                    <MatSubtitle2 class="demo-mat-card-clean-margin">
+                                        Start: @assignment.Added.ToShortDateString()
+                                    </MatSubtitle2>
+                                    <MatSubtitle2 class="demo-mat-card-clean-margin">
+                                        Deadline: @assignment.Deadline.ToShortDateString()
+                                    </MatSubtitle2>
+                                </div>
+
+                                <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+                                    @assignment.Description
+                                </MatBody2>
+                                <button class="btn btn-primary" @onclick="(() => CheckAssignment(assignment.Id))"><i class="oi oi-pencil"></i></button>
+                            </MatCardContent>
+                        </MatCard>
+                    </div>
+                }
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <span>You're not authorized.</span>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    private DateTime? _day;
+    public DateTime? Day {
+        get {
+            return _day;
+        }
+        set {
+            _day = value;
+            AssignmentsService.FilterAssignments(value);
+        }
+    }
+
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var authenticationState = await AuthState;
+        if (authenticationState?.User?.Identity is not null && authenticationState.User.Identity.IsAuthenticated)
+        {
+
+            await AssignmentsService.GetAssignments();
+            Day = DateTime.Parse(DateTime.Now.ToShortDateString());
+            var incomingAssignments = AssignmentsService.Assignments.Where(d => d.Deadline >= Day && d.Deadline <= Day.Value.AddDays(3)).Count();
+            Toaster.Add($"You have {incomingAssignments} assignments that will soon reach dealine date.", MatToastType.Info, "Reminder");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+
+    }
+
+    void CheckAssignment(Guid id)
+    {
+        NavigationManager.NavigateTo($"assignments/{id}");
+    }
+
+    
+}

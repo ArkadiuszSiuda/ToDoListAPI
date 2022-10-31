@@ -1,0 +1,19 @@
+﻿@page "/"
+@using FrontToDoListAPI.Client.Services
+@inject IAssignmentsService AssignmentsService
+
+@foreach (var assignment in AssignmentsService.Assignments)
+        {
+          <p>
+              @assignment.Name
+          </p>
+        }
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AssignmentsService.GetAssignments();
+    }
+    
+
+}

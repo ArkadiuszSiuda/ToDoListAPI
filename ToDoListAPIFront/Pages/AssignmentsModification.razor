@@ -1,0 +1,108 @@
+﻿@page "/assignments"
+@page "/assignments/{id:guid}"
+@using ToDoListAPIFront.Models
+@using ToDoListAPIFront.Services
+@inject IAssignmentService AssignmentService
+@inject NavigationManager NavigationManager
+
+<style>
+    .button-style{
+        margin-top: 1em;
+        margin-right: 1em;
+    }
+</style>
+@if (Id == Guid.Empty)
+{
+    <PageTitle>Create new assignment</PageTitle>
+    <h3>Create new assignment</h3>
+}
+else
+{
+    <PageTitle>Edit @assignment.Name</PageTitle>
+    <h3>Edit @assignment.Name</h3>
+}
+
+<EditForm Model="assignment" OnSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div>
+        <label for="name">Name</label>
+        <InputText id="name" @bind-Value="assignment.Name" class="form-control"></InputText>
+    </div>
+    <div>
+        <label for="description">Description</label>
+        <InputText id="description" @bind-Value="assignment.Description" class="form-control"></InputText>
+    </div>
+    <div>
+        <label for="start">Start date</label>
+        <InputDate id="start" @bind-Value="assignment.Added" class="form-control"></InputDate>
+    </div>
+    <div>
+        <label for="deadline">Deadline</label>
+        <InputDate id="deadline" @bind-Value="assignment.Deadline" class="form-control"></InputDate>
+    </div>
+
+    <button type="submit" class="btn btn-primary button-style">@btnText</button>
+    @if (Id != Guid.Empty)
+    {
+        <button type="button" class="btn btn-danger button-style" @onclick="DeleteAssignment">Delete</button>
+    }
+
+</EditForm>
+@code{
+    [Parameter]
+
+    public Guid Id { get; set; }
+
+    string btnText = string.Empty;
+
+    Assignment assignment = new Assignment {
+            Added = DateTime.Now,
+            Deadline = DateTime.Now
+        };
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id != Guid.Empty)
+        {
+            assignment = await AssignmentService.GetAssignment(Id);
+        }
+    }
+
+    async Task HandleSubmit(EditContext editContext)
+    {
+        if (editContext != null && editContext.Validate()){
+
+            if (Id == Guid.Empty)
+            {
+                await AssignmentService.CreateAssignment(assignment);
+            }
+            else
+            {
+                await AssignmentService.UpdateAssignment(assignment, Id);
+            }
+        }
+
+    }
+
+    async Task DeleteAssignment()
+    {
+        await AssignmentService.DeleteAssignment(assignment.Id);
+    }
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        btnText = Id == Guid.Empty ? "Save assignment" : "Update assignment";
+        var authenticationState = await AuthState;
+        if (authenticationState?.User?.Identity is null || !authenticationState.User.Identity.IsAuthenticated)
+    {
+            NavigationManager.NavigateTo("/");
+        }
+
+
+    }
+
+}

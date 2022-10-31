@@ -1,0 +1,22 @@
+﻿@inherits LayoutComponentBase
+<style>
+    .background-color{
+        background: rgba(211, 208, 217, 0.26);
+    }
+</style>
+<div class="page background-color">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <LoginLogoutButton />
+        </div>
+
+        <article class="content px-4">
+            @Body
+            <Spinner />
+        </article>
+    </main>
+</div>

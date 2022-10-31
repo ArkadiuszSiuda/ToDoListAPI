@@ -1,0 +1,131 @@
+﻿@page "/register"
+@using ToDoListAPIFront.Models
+@using ToDoListAPIFront.Services
+@inject IAssignmentService AssignmentService
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<style>
+    .button{
+        display:flex;
+        justify-content: center;
+        margin-top: 1em;
+    }
+    .container-card {
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        margin-top: 15em;
+    }
+
+    .demo-mat-card {
+        min-width: 400px;
+        max-width: 500px;
+    }
+
+    .demo-mat-card-content {
+        padding: 1rem;
+    }
+
+    .demo-mat-card-clean-margin {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .content-container{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .text-field{
+        min-width: 15em;
+    }
+
+    .error {
+        color: red;
+    }
+</style>
+
+
+
+
+<div class="container-card">
+    <MatCard class="demo-mat-card">
+        <div class="demo-mat-card-content">
+            <MatHeadline6 class="demo-mat-card-clean-margin">
+                Register
+            </MatHeadline6>
+
+        </div>
+
+        <MatBody2 class="demo-mat-card-content demo-mat-card-clean-margin">
+            <div class="content-container">
+<EditForm Model="register" OnSubmit="CreateUser">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <p class="error">@ErrorMessage</p>
+        <label for="email">Email</label>
+    <div>
+        <MatTextField id="email" InputClass="text-field" @bind-Value="register.Email"  Outlined="true"></MatTextField>
+    </div>
+    
+        <label for="password">Password</label>
+    <div>
+        <MatTextField id="password"  InputClass="text-field" @bind-Value="register.Password"  type="password" Outlined="true"></MatTextField>
+    </div>
+    
+        <label for="confirmpassword">Confirm password</label>
+    <div>
+        <MatTextField id="confirmpassword" InputClass="text-field" @bind-Value="register.ConfirmPassword"  type="password" Outlined="true"></MatTextField>
+    </div>
+    <div class="button">
+    <button type="submit" class="btn btn-primary">Register</button>
+    </div>
+</EditForm>
+            </div>
+        </MatBody2>
+
+    </MatCard>
+</div>
+
+@code {
+    public string ErrorMessage { get; set; } = string.Empty;
+    RegisterModel register = new RegisterModel { };
+    async Task CreateUser(EditContext editContext)
+    {
+        ErrorMessage = string.Empty;
+        if (editContext != null && editContext.Validate())
+        {
+            var userCheck = await Http.GetFromJsonAsync<bool>($"api/register/{register.Email}");
+            if (userCheck){
+                ErrorMessage = "User with this email already exists.";
+                return;
+            }
+
+            var result = await Http.PostAsJsonAsync("api/register", register);
+            if (register.Password != register.ConfirmPassword){
+                ErrorMessage = "Passwords are different.";
+                return;
+            }
+            if (result.IsSuccessStatusCode)
+            {
+                NavigationManager.NavigateTo("/");
+            }
+        }
+    }
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthState { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthState;
+        if (authenticationState?.User?.Identity is not null && authenticationState.User.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+
+    }
+
+}
